@@ -67,10 +67,7 @@ public class Primitive extends Procedure {
 
         int n = Integer.MAX_VALUE;
 
-<<<<<<< HEAD
-=======
 				env.define("null", null);
->>>>>>> 61450b9 (Untracked changes on the source files)
         env
                 .defPrim("*", TIMES, 0, n)
                 .defPrim("*", TIMES, 0, n)
@@ -176,11 +173,7 @@ public class Primitive extends Procedure {
                 .defPrim("list-ref", LISTREF, 2)
                 .defPrim("list-tail", LISTTAIL, 2)
                 .defPrim("list?", LISTQ, 1)
-<<<<<<< HEAD
-                .defPrim("load", LOAD, 1)
-=======
                 .defPrim("import", LOAD, 1)
->>>>>>> 61450b9 (Untracked changes on the source files)
                 .defPrim("log", LOG, 1)
                 .defPrim("macro-expand", MACROEXPAND, 1)
                 .defPrim("make-string", MAKESTRING, 1, 2)
@@ -259,12 +252,7 @@ public class Primitive extends Procedure {
                 .defPrim("exit", EXIT, 0, 1)
                 .defPrim("error", ERROR, 0, n)
                 .defPrim("time-call", TIMECALL, 1, 2)
-<<<<<<< HEAD
-                .defPrim("_list*", LISTSTAR, 0, n)
-        ;
-=======
                 .defPrim("_list*", LISTSTAR, 0, n);
->>>>>>> 61450b9 (Untracked changes on the source files)
 
         return env;
     }
@@ -638,11 +626,7 @@ public class Primitive extends Procedure {
             case PEEKCHAR:
                 return inPort(x, interp).peekChar();
             case LOAD:
-<<<<<<< HEAD
-                return interp.load(x);
-=======
                 return interp._import(x);
->>>>>>> 61450b9 (Untracked changes on the source files)
             case READ:
                 return inPort(x, interp).read();
             case EOF_OBJECT:
