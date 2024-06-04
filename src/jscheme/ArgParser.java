@@ -14,20 +14,14 @@ import java.util.Arrays;
 
 public class ArgParser {
 	public ArrayList<String> arr;
-	public String program;
 		
-	public ArgParser(String program, String[] args) {
-		this.program = program; 
+	public ArgParser(String[] args) {
 		arr = new ArrayList<>(); 
 		for (String arg: args) {
 			arr.add(arg);
 		}
 	}
 
-	public String getProgram() {
-		return program;
-	}
-	
 	public String get() {
 		if (!arr.isEmpty())
 			return arr.remove(0);
