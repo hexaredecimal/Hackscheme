@@ -38,6 +38,10 @@ class Config {
 		return author;
 	}
 
+	public void setProgram(String name) {
+		this.name = name;
+	}
+
 	public String[] getFiles() {
 		Object[] objs = this.files.toArray();
 		String[] files = new String[objs.length];
@@ -77,13 +81,13 @@ class Config {
 										.concat("\thelp\t\t - Displays this help information\n")
 										.concat("\tversion\t\t - Displays the version of this program\n");
 
-		String logo = 
-"\t _           _   _____     _ \n" +                  
-"\t| |_ ___ ___| |_|   __|___| |_ ___ _____ ___\n" + 
-"\t|   | .'|  _| '_|__   |  _|   | -_|     | -_|\n" + 
-"\t|_|_|__,|___|_,_|_____|___|_|_|___|_|_|_|___|\n\n" + 
-"\t\t a proud fork of JScheme :) \n\n" + 
-"\t\t (c) 2024 - Gama Sibusiso\n\n";
+		String logo
+						= "\t _           _   _____     _ \n"
+						+ "\t| |_ ___ ___| |_|   __|___| |_ ___ _____ ___\n"
+						+ "\t|   | .'|  _| '_|__   |  _|   | -_|     | -_|\n"
+						+ "\t|_|_|__,|___|_,_|_____|___|_|_|___|_|_|_|___|\n\n"
+						+ "\t\t a proud fork of JScheme :) \n\n"
+						+ "\t\t (c) 2024 - Gama Sibusiso\n\n";
 		System.out.println(out_put);
 		System.out.println(logo);
 		System.exit(101);
@@ -101,7 +105,6 @@ class Config {
 
 	public void parse(ArgParser parser) {
 		String top = parser.get();
-		this.name = parser.getProgram();
 		boolean is_adding_files = false;
 		boolean has_error = false;
 		while (top != null) {
@@ -184,8 +187,10 @@ public class Scheme extends SchemeUtils {
 	 * to load, and then enter a read eval write loop. *
 	 */
 	public static void main(String[] args) {
-		ArgParser argp = new ArgParser("HackScheme", args);
+		ArgParser argp = new ArgParser(args);
 		Config conf = new Config();
+		conf.setProgram("HackScheme");
+		conf.setVersion("0.0.1");
 		conf.parse(argp);
 
 		String[] files = conf.getFiles();
