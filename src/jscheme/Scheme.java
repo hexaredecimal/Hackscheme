@@ -231,7 +231,7 @@ public class Scheme extends SchemeUtils {
 				load(files[i]);
 			}
 
-			if (files == null) {
+			if (files == null || files.length == 0) {
 				return;
 			}
 
@@ -263,11 +263,12 @@ public class Scheme extends SchemeUtils {
 			FileAttributes current_config = new FileAttributes("project.toml");
 			FileAttributes previous_config = current_config.loadAttributes();
 
-			System.out.println(current_config + " : " + previous_config);
+			// System.out.println(current_config + " : " + previous_config);
 			if (!current_config.equals(previous_config)) {
 				DependecyResolver deps = new DependecyResolver(true, current_config);
 				deps.resolve();
 			}
+			current_config.saveAttributes();
 		}
 
 		String[] files = conf.getFiles();
@@ -276,6 +277,8 @@ public class Scheme extends SchemeUtils {
 		if (conf.isRepl()) {
 			scheme.readEvalWriteLoop();
 		}
+
+	
 	}
 
 	/**
