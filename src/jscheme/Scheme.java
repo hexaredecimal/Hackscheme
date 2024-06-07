@@ -1,11 +1,15 @@
 package jscheme;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
+import package_manager.DependecyResolver;
 
 class Config {
 
@@ -77,6 +81,7 @@ class Config {
 		out_put += "\n\n";
 		out_put
 						+= "[options]\n"
+										.concat("\tnew\t\t - Creates a new project\n")
 										.concat("\trepl \t\t - Starts the repl\n")
 										.concat("\thelp\t\t - Displays this help information\n")
 										.concat("\tversion\t\t - Displays the version of this program\n");
@@ -103,12 +108,73 @@ class Config {
 		System.exit(101);
 	}
 
+	public void initNewProject(String project_name) {
+		if (project_name != null) {
+			// TODO: Create a project file with the name
+			return;
+		}
+
+		Scanner sc = new Scanner(System.in);
+		System.out.print("Enter project name: ");
+		String name = sc.nextLine();
+
+		if (name.isBlank()) {
+			System.err.println("Error: Invalid project name");
+			System.exit(1);
+		}
+
+		createProjectFile(name);
+
+		return;
+	}
+
+	public static boolean isProject() {
+		File project = new File("project.toml");
+		File project_dir = new File(".pkg");
+		return project.exists() && project_dir.exists() && project_dir.isDirectory();
+	}
+
+	private void createProjectFile(String project_name) {
+		if (isProject()) {
+			System.err.println("Error: project files already exists");
+			System.exit(1);
+		}
+
+		String txt
+						= "[package]\n"
+						+ "name = \"" + project_name + "\"\n"
+						+ "version = \"0.0.1\"\n"
+						+ "authors = []\n"
+						+ "\n"
+						+ "\n"
+						+ "[dependencies]\n";
+		String project_file = "project.toml";
+		File fp = new File(project_file);
+		File fp_dir = new File(".pkg");
+		try {
+			fp_dir.mkdirs();
+			fp.createNewFile();
+			FileWriter fw = new FileWriter(fp);
+			fw.write(txt);
+			fw.close();
+			FileAttributes att = new FileAttributes(fp.getAbsolutePath());
+			att.saveAttributes();
+		} catch (IOException e) {
+			System.err.println("Error: failed to initialize a new project");
+			System.exit(1);
+		}
+	}
+
 	public void parse(ArgParser parser) {
 		String top = parser.get();
 		boolean is_adding_files = false;
 		boolean has_error = false;
 		while (top != null) {
-			if (top.equals("repl")) {
+			if (top.equals("new")) {
+				String name = parser.get();
+				this.initNewProject(name);
+				break;
+			} else if (top.equals("repl")) {
 				if (is_adding_files) {
 					has_error = true;
 					break;
@@ -193,8 +259,20 @@ public class Scheme extends SchemeUtils {
 		conf.setVersion("0.0.1");
 		conf.parse(argp);
 
+		if (Config.isProject()) {
+			FileAttributes current_config = new FileAttributes("project.toml");
+			FileAttributes previous_config = current_config.loadAttributes();
+
+			System.out.println(current_config + " : " + previous_config);
+			if (!current_config.equals(previous_config)) {
+				DependecyResolver deps = new DependecyResolver(true, current_config);
+				deps.resolve();
+			}
+		}
+
 		String[] files = conf.getFiles();
 		Scheme scheme = new Scheme(files);
+
 		if (conf.isRepl()) {
 			scheme.readEvalWriteLoop();
 		}
