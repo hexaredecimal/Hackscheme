@@ -15,6 +15,6 @@ code of the interpreter.
   -  [X] date - Functions for working with dates
 - [ ] Improved repl
 - [ ] Static code generation
-- [ ] Arguments parser
-- [ ] Package manager
-- [ ] Package registry
+- [X] Arguments parser
+- [X] Package manager
+- [X] Package registry - [here](https://hackscheme.github.io)
