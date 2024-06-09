@@ -1,6 +1,7 @@
 package jscheme;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -47,6 +48,9 @@ class Config {
 	}
 
 	public String[] getFiles() {
+		if (Config.isProject())
+			this.files.add("main.scm");
+
 		Object[] objs = this.files.toArray();
 		String[] files = new String[objs.length];
 		for (int i = 0; i < objs.length; i++) {
@@ -110,7 +114,7 @@ class Config {
 
 	public void initNewProject(String project_name) {
 		if (project_name != null) {
-			// TODO: Create a project file with the name
+			createProjectFile(name);
 			return;
 		}
 
@@ -124,7 +128,8 @@ class Config {
 		}
 
 		createProjectFile(name);
-
+		System.out.println("Successfully created a new project");
+		System.exit(0);
 		return;
 	}
 
@@ -152,6 +157,8 @@ class Config {
 		File fp = new File(project_file);
 		File fp_dir = new File(".pkg");
 		try {
+			File main_file = new File("main.scm");
+			main_file.createNewFile(); 
 			fp_dir.mkdirs();
 			fp.createNewFile();
 			FileWriter fw = new FileWriter(fp);
@@ -223,7 +230,7 @@ public class Scheme extends SchemeUtils {
 	 * Create a Scheme interpreter and load an array of files into it. Also load
 	 * SchemePrimitives.CODE. *
 	 */
-	public Scheme(String[] files) {
+	public Scheme(String[] files, boolean is_project) {
 		Primitive.installPrimitives(globalEnvironment);
 		try {
 			load(new InputPort(new StringReader(SchemePrimitives.CODE)));
@@ -267,18 +274,17 @@ public class Scheme extends SchemeUtils {
 			if (!current_config.equals(previous_config)) {
 				DependecyResolver deps = new DependecyResolver(true, current_config);
 				deps.resolve();
+				System.out.println("Done resolving all dependencies");
 			}
 			current_config.saveAttributes();
 		}
 
 		String[] files = conf.getFiles();
-		Scheme scheme = new Scheme(files);
+		Scheme scheme = new Scheme(files, Config.isProject());
 
 		if (conf.isRepl()) {
 			scheme.readEvalWriteLoop();
 		}
-
-	
 	}
 
 	/**
@@ -312,13 +318,51 @@ public class Scheme extends SchemeUtils {
 		try {
 			return load(new InputPort(new FileInputStream(name)));
 		} catch (IOException e) {
-			return error("can't load " + name);
+			return error("can't load " + name + ", with message: " + e.getMessage());
 		}
 	}
 
 	public Object _import(Object fileName) {
 		String name = stringify(fileName, false).concat(".scm");
+		
+		File fp = new File(name); 
+		if (!fp.exists()) {
+			return loadFromDependencyList(name); 
+		}
 		return load(name);
+	}
+
+	private Object loadFromDependencyList(String name) {
+		File fp = new File(".pkg");
+		if (!fp.isDirectory()) {
+			System.out.println("Error: Cannot locate project directory");
+			System.exit(101);
+		}
+
+		Object value = null; 
+		for (File inner : fp.listFiles()) {
+			if (inner.isDirectory()) {
+				value = getNested(inner, name);
+			}
+		}
+		return value; 
+	}
+
+	private Object getNested(File fp, String name) {
+		FileFilter filter = new FileFilter() {
+			@Override
+			public boolean accept(File file) {
+				return file.getName().endsWith(".scm");
+			}
+		};
+		for (File src : fp.listFiles(filter)) {
+			String file_name = src.getName();
+			
+			if (file_name.equals(name)) {
+				return load(src.getAbsolutePath());
+			}
+		}
+		return null; 	
 	}
 
 	/**
