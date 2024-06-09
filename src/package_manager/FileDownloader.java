@@ -28,7 +28,6 @@ public class FileDownloader {
 		HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 		int responseCode = httpConn.getResponseCode();
 
-		System.out.print(name.concat(" :[")); 
 		// Check HTTP response code
 		if (responseCode == HttpURLConnection.HTTP_OK) {
 			InputStream inputStream = httpConn.getInputStream();
@@ -38,14 +37,12 @@ public class FileDownloader {
 			byte[] buffer = new byte[4096];
 			while ((bytesRead = inputStream.read(buffer)) != -1) {
 				if (count % 10 == 0) {
-					System.out.print("|");
 				}
 				outputStream.write(buffer, 0, bytesRead);
 				count += bytesRead;  
 			}
 			outputStream.close();
 			inputStream.close();
-			System.out.println("]");
 			System.out.println("File downloaded: " + (count +1) + " bytes written");
 		} else {
 			System.out.println("No file to download. Server replied HTTP code: " + responseCode);
