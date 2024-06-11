@@ -649,18 +649,13 @@ public class Primitive extends Procedure {
                 }
             case NEW:
                 try {
+										if (x instanceof Class) {
+											return ((Class) x).newInstance(); 
+										}
                     return JavaMethod.toClass(x).newInstance();
-                } catch (ClassCastException e) {
-                    ;
-                } catch (NoSuchMethodError e) {
-                    ;
-                } catch (InstantiationException e) {
-                    ;
-                } catch (ClassNotFoundException e) {
-                    ;
-                } catch (IllegalAccessException e) {
-                    ;
-                }
+                } catch (Exception ee) {
+									System.err.println("Error: " + ee.getMessage());
+								}
                 return FALSE;
             case METHOD:
                 return new JavaMethod(stringify(x, false), y,
