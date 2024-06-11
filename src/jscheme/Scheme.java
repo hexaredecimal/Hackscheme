@@ -7,10 +7,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import package_manager.DependecyResolver;
+import javassist.*;
 
 class Config {
 
@@ -48,8 +53,9 @@ class Config {
 	}
 
 	public String[] getFiles() {
-		if (Config.isProject())
+		if (Config.isProject()) {
 			this.files.add("main.scm");
+		}
 
 		Object[] objs = this.files.toArray();
 		String[] files = new String[objs.length];
@@ -158,7 +164,7 @@ class Config {
 		File fp_dir = new File(".pkg");
 		try {
 			File main_file = new File("main.scm");
-			main_file.createNewFile(); 
+			main_file.createNewFile();
 			fp_dir.mkdirs();
 			fp.createNewFile();
 			FileWriter fw = new FileWriter(fp);
@@ -263,7 +269,7 @@ public class Scheme extends SchemeUtils {
 		ArgParser argp = new ArgParser(args);
 		Config conf = new Config();
 		conf.setProgram("HackScheme");
-		conf.setVersion("0.0.1");
+		conf.setVersion("0.0.5");
 		conf.parse(argp);
 
 		if (Config.isProject()) {
@@ -324,10 +330,10 @@ public class Scheme extends SchemeUtils {
 
 	public Object _import(Object fileName) {
 		String name = stringify(fileName, false).concat(".scm");
-		
-		File fp = new File(name); 
+
+		File fp = new File(name);
 		if (!fp.exists()) {
-			return loadFromDependencyList(name); 
+			return loadFromDependencyList(name);
 		}
 		return load(name);
 	}
@@ -339,13 +345,13 @@ public class Scheme extends SchemeUtils {
 			System.exit(101);
 		}
 
-		Object value = null; 
+		Object value = null;
 		for (File inner : fp.listFiles()) {
 			if (inner.isDirectory()) {
 				value = getNested(inner, name);
 			}
 		}
-		return value; 
+		return value;
 	}
 
 	private Object getNested(File fp, String name) {
@@ -357,12 +363,12 @@ public class Scheme extends SchemeUtils {
 		};
 		for (File src : fp.listFiles(filter)) {
 			String file_name = src.getName();
-			
+
 			if (file_name.equals(name)) {
 				return load(src.getAbsolutePath());
 			}
 		}
-		return null; 	
+		return null;
 	}
 
 	/**
@@ -376,6 +382,133 @@ public class Scheme extends SchemeUtils {
 			}
 			eval(x);
 		}
+	}
+
+	private static CtClass resolveCtClass(String type, ClassPool pool) throws NotFoundException {
+		switch (type) {
+			case "int":
+				return CtClass.intType;
+			case "boolean":
+				return CtClass.booleanType;
+			case "float":
+				return CtClass.floatType;
+			case "double":
+				return CtClass.doubleType;
+			// Add other primitive types as needed
+			case "string":
+				return pool.get("java.lang.String");
+			default:
+				return pool.get(type);
+		}
+	}
+
+	private static String restructureType(String t) {
+		if (t.equals("string")) {
+			return "String";
+		}
+
+		return t;
+	}
+
+	public String convert(String type_cast, String value) {
+		if (type_cast.equals("int")) {
+			return "Integer.valueOf(" + value + ".toString()).intValue()";
+		}		
+
+		if (type_cast.equals("double")) {
+			return "Double.valueOf(" + value + ".toString()).doubleValue()";
+		}		
+
+		if (type_cast.equals("float")) {
+			return "Float.valueOf(" + value + ".toString()).floatValue()"; 
+		}
+
+		if (type_cast.equals("boolean")) {
+			return "Boolean.valueOf(" + value + ".toString()).booleanValue()"; 
+		}
+
+		if (type_cast.equals("string")) {
+			return value + ".toString()";
+		}
+
+
+		return null;
+	}
+
+	
+	public Object declareStruct(Object obj, Environment env) {
+		String name = (String) first(obj);
+		Object fields = rest(obj);
+
+		ClassPool pool = ClassPool.getDefault();
+		CtClass cls = pool.makeClass(name);
+
+		String constructor_args = "";
+		String constructor_inits = "";
+		String args = "";
+		ArrayList<String> getters = new ArrayList<>();
+		while (fields != null) {
+			Object field = first(fields);
+			String f_name = (String) first(field);
+			String f_type = (String) first(rest(field));
+			try {
+				CtField fd = new CtField(resolveCtClass(f_type, pool), f_name, cls);
+				fd.setModifiers(Modifier.PRIVATE);
+				cls.addField(fd);
+			} catch (NotFoundException ex) {
+				Logger.getLogger(Scheme.class.getName()).log(Level.SEVERE, null, ex);
+			} catch (CannotCompileException ex) {
+				Logger.getLogger(Scheme.class.getName()).log(Level.SEVERE, null, ex);
+			}
+
+			fields = rest(fields);
+			String conv = convert(f_type, f_name + "[0]");
+
+			if (conv != null)
+				constructor_inits = constructor_inits.concat("\tthis.").concat(f_name).concat(" = ").concat(conv).concat(";\n");
+			else 
+				constructor_inits = constructor_inits.concat("\tthis.").concat(f_name).concat(" = ").concat(f_name).concat(";\n");
+			
+			String setter= "public void set_" + f_name + "( Object[] " +f_name + ") {\n";
+			setter += "\tthis." + f_name + " = " + conv + ";\n}";
+			
+			constructor_args = constructor_args.concat("Object").concat(" ").concat(f_name);
+			args = args.concat(f_name);
+			String getter = restructureType(f_type).concat(" get_" + f_name).concat("() { return this.").concat(f_name).concat("; }");
+			getters.add(getter);
+			getters.add(setter);
+			if (fields != null) {
+				constructor_args += ", ";
+				args += ", ";
+			}
+		}
+
+		String constructor = "public ".concat(name).concat("(").concat(") {\n");
+		constructor = constructor.concat("}\n\n");
+
+
+		
+
+		try {
+			CtConstructor cns = CtNewConstructor.make(constructor, cls);
+			cls.addConstructor(cns);
+			for (String getter : getters) {
+				CtMethod gt = CtNewMethod.make(getter, cls);
+				cls.addMethod(gt);
+			}
+			Class cc = cls.toClass(Thread.currentThread().getContextClassLoader(), Scheme.class.getProtectionDomain());
+
+			for (Method m : cc.getDeclaredMethods()) {
+				JavaMethod md = new JavaMethod(m);
+				env.define(m.getName(), md);
+			}
+			
+			env.define(name, cc);
+			return cc;
+		} catch (Exception ex) {
+			Logger.getLogger(Scheme.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return null;
 	}
 
 	//////////////// Evaluation
@@ -395,6 +528,9 @@ public class Scheme extends SchemeUtils {
 				Object fn = first(x);
 				Object args = rest(x);
 
+				if (fn == "struct") {
+					return declareStruct(args, env);
+				}
 				if (fn == "quote") {             // QUOTE
 					return first(args);
 				} else if (fn == "begin") {      // BEGIN
