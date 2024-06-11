@@ -27,7 +27,10 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.StringBufferInputStream;
 import java.net.URL;
 import java.util.Map;
@@ -69,6 +72,7 @@ public class DependecyResolver {
 	private void _connectCloud() throws IOException {
 		// InputStream serviceAccount = new StringBufferInputStream(s) 
 		InputStream serviceAccount = DependecyResolver.class.getResourceAsStream("/res/hackscheme.json");
+
 		//InputStream serviceAccount = new FileInputStream(config);
 		GoogleCredentials credentials = GoogleCredentials.fromStream(serviceAccount);
 		FirebaseOptions options = new FirebaseOptions.Builder()
