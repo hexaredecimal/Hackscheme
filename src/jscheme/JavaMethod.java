@@ -1,5 +1,6 @@
 package jscheme;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -30,23 +31,31 @@ public class JavaMethod extends Procedure {
 
     }
 
+		public JavaMethod(Method md) {
+			this.name = md.getDeclaringClass().getName() + "." + md.getName(); 
+			argClasses = md.getParameterTypes(); 
+			isStatic = Modifier.isStatic(md.getModifiers()); 
+		}
+
+		public JavaMethod(Constructor c) {
+			this.name = c.getDeclaringClass().getName() + "." + c.getName(); 
+			argClasses = c.getParameterTypes(); 
+			isStatic = false; 
+		}
+
     /**
      * Apply the method to a list of arguments. *
      */
     public Object apply(Scheme interpreter, Object args) {
         try {
-            if (isStatic) return method.invoke(null, toArray(args));
+            if (isStatic) {
+							return method.invoke(null, toArray(args));
+						}
             else return method.invoke(first(args), toArray(rest(args)));
-        } catch (IllegalAccessException e) {
-            ;
-        } catch (IllegalArgumentException e) {
-            ;
-        } catch (InvocationTargetException e) {
-            ;
-        } catch (NullPointerException e) {
-            ;
-        }
-        return error("Bad Java Method application:" + this
+				} catch (Exception r) {
+					System.err.println("Error: " + r.getMessage());
+				}
+				return error("Bad Java Method application:" + this
                 + stringify(args) + ", ");
     }
 
